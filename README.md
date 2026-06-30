@@ -370,29 +370,3 @@ If repeated-experiment outputs should be regenerated from scratch:
 rm -rf experiment_repeated/logs experiment_repeated/db experiment_repeated/results
 CLEAN_OUTPUT=1 ./run_repeated_experiment.sh
 ```
-
-## Citation and release metadata
-
-Before public archival or paper submission, record:
-
-- the Git commit hash used for the experiment;
-- the operating system and hardware;
-- dependency versions (`mosquitto`, `sqlite3`, `protoc-c`, compiler, Python);
-- the exact command used to run the experiment;
-- the repository license, if the project is released publicly;
-- an archival DOI or release tag, if required by the venue.
-
-A minimal environment capture command is:
-
-```bash
-{
-  date -Iseconds
-  uname -a
-  gcc --version | head -n 1
-  mosquitto -h 2>&1 | head -n 1 || true
-  sqlite3 --version
-  protoc-c --version
-  python3 --version
-  git rev-parse HEAD 2>/dev/null || true
-} | tee experiment_environment.txt
-```
