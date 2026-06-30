@@ -1,13 +1,52 @@
 # WebSocket API
 
-Default server: `ws://127.0.0.1:8080`.
+Default server for a manual local run:
+
+```text
+ws://127.0.0.1:8080
+```
+
+The repeated experiment uses `WS_PORT=18080` by default to avoid collisions with
+manual UI sessions.
 
 ## Live telemetry
 
-The gateway sends JSON messages with `type: "telemetry"` containing timestamp, sequence, IDs, IMU, tilt, and motors.
+The gateway broadcasts JSON telemetry frames to every connected client after a
+snapshot has been persisted. The message type is:
 
-## History
+```json
+{
+  "type": "telemetry"
+}
+```
 
-The UI can request history through WebSocket. The server limits the number of samples to avoid excessive responses.
+The full object includes gateway reception metadata, sequence/header fields, IMU,
+tilt, and motor summaries. The schema is intentionally browser-friendly JSON even
+though the MQTT transport payload is Protobuf.
 
-Keeping the live and history JSON formats compatible is important to avoid breaking the UI.
+## History / replay
+
+A client can request the latest stored samples over the same WebSocket connection:
+
+```json
+{"type":"history","last":100}
+```
+
+The gateway replies with an ordered list of stored samples:
+
+```json
+{
+  "type": "history",
+  "items": []
+}
+```
+
+Rows are retrieved from SQLite by gateway reception time and returned in
+chronological order. The server applies an internal limit to avoid excessive
+responses.
+
+## Measurement note
+
+The current experiments evaluate gateway throughput, persistence, and replay data
+availability. They do not measure browser rendering latency or end-to-end latency
+from publisher to UI.

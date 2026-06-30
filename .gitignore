@@ -21,13 +21,21 @@ state_dump
 *.db-shm
 *.log
 
-# Experiment artifacts
+# Manual experiment artifacts
 experiments/db/
 experiments/logs/
 experiments/results/
 db/
 logs/
 results/
+
+# Repeated experiment runtime artifacts
+experiment_repeated/db/
+experiment_repeated/logs/
+
+# Environment captures and temporary outputs
+experiment_environment.txt
+*.tmp
 
 # Python/cache/editor
 __pycache__/

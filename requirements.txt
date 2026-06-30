@@ -1,0 +1,4 @@
+# Optional plotting dependency for scripts/analysis/*.py
+# The analysis scripts generate CSV and Markdown summaries without this package,
+# but PNG figures require matplotlib.
+matplotlib>=3.5

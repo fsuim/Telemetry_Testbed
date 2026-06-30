@@ -3,28 +3,36 @@
 Main flow:
 
 ```text
-robot_sim -> MQTT -> telemetry_gateway -> SQLite/WebSocket -> UI
+robot_sim -> MQTT broker -> telemetry_gateway -> SQLite/WAL + WebSocket -> UI
 ```
 
 ## Components
 
-- `robot_sim`: simulator executable. Initializes sensors, the telemetry cache, and the consolidated Protobuf publisher.
-- `src/sim/sensors`: simulated sensors that publish RAW payloads to separate MQTT topics.
-- `src/sim/telemetry_cache.c`: in-memory cache shared by the sensors and the state publisher.
-- `src/sim/telemetry_state_pub.c`: publishes `TelemetryState` snapshots in Protobuf on the `/robot/v1/telemetry/state` topic.
-- `telemetry_gateway`: gateway executable. Consumes Protobuf via MQTT, persists data to SQLite/WAL, and broadcasts JSON through WebSocket.
-- `src/infra/persistence/db_sqlite.c`: schema, PRAGMAs, writes, and history reads.
-- `src/infra/websocket/ws_server.c`: WebSocket server for the UI and history replay.
-- `ui/`: static web interface.
+- `robot_sim`: simulator executable. It starts simulated sensors, updates the
+  shared telemetry cache, publishes raw sensor MQTT topics, and publishes the
+  consolidated Protobuf `TelemetryState` snapshot.
+- `src/sim/sensors/`: simulated sensor publishers for IMU, tilt, and two motor
+  channels.
+- `src/sim/telemetry_cache.c`: shared in-memory cache used by sensor threads and
+  the state publisher.
+- `src/sim/telemetry_state_pub.c`: publishes `TelemetryState` snapshots on
+  `/robot/v1/telemetry/state`.
+- `telemetry_gateway`: subscribes to the Protobuf snapshot, timestamps reception,
+  decodes and queues samples, writes to SQLite/WAL in configurable batches, and
+  broadcasts JSON over WebSocket.
+- `src/infra/persistence/db_sqlite.c`: schema, PRAGMAs, inserts, and history reads.
+- `src/infra/websocket/ws_server.c`: WebSocket live stream and history endpoint.
+- `ui/`: static web UI for live monitoring and database-backed replay.
+- `state_dump`: CLI Protobuf decoder for the snapshot topic.
 - `scripts/`: experiment and analysis automation.
 
-## Diagram
+## Dataflow diagram
 
 ```text
-+-------------+       MQTT RAW topics
++-------------+       raw MQTT topics
 | robot_sim   | ------------------------------+
 | sensors     |                               |
-| cache       |       MQTT Protobuf snapshot  |
+| cache       |       Protobuf snapshot       |
 | state pub   | -- /robot/v1/telemetry/state -+
 +-------------+                               |
                                               v
@@ -32,9 +40,10 @@ robot_sim -> MQTT -> telemetry_gateway -> SQLite/WebSocket -> UI
                                       | telemetry_gateway |
                                       | MQTT subscribe    |
                                       | Protobuf decode   |
-                                      | queue/batch       |
+                                      | gateway timestamp |
+                                      | FIFO queue        |
                                       | SQLite writer     |
-                                      | WS JSON stream    |
+                                      | WebSocket JSON    |
                                       +---------+---------+
                                                 |
                          +----------------------+----------------------+
@@ -52,14 +61,9 @@ robot_sim -> MQTT -> telemetry_gateway -> SQLite/WebSocket -> UI
                                                                  +-------------+
 ```
 
-## Organization decision
+## Measurement boundary
 
-- `src/apps`: entrypoints and CLI.
-- `src/app`: application orchestration.
-- `src/sim`: simulator and sensors.
-- `src/infra`: external dependencies and infrastructure, such as MQTT, SQLite, and WebSocket.
-- `include`: headers organized by layer.
-- `proto`: Protobuf contracts.
-- `generated`: generated code.
-- `scripts`: operational automation.
-- `experiments`: local databases, logs, and results, ignored by Git.
+The current experiments evaluate the local gateway-side path. The gateway
+reception timestamp is the temporal reference used for throughput and storage
+analysis. The experiments do not measure synchronized end-to-end latency from
+publisher to browser.

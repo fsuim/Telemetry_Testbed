@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DUR="${DUR:-60}"                  # segundos por configuração
-SENSOR_RATE="${SENSOR_RATE:-50}"  # taxa dos sensores RAW
+DUR="${DUR:-60}"                  # seconds per configuration
+SENSOR_RATE="${SENSOR_RATE:-50}"  # RAW sensor rate
 RATES_STR="${RATES:-20 50 100 200}"
 BATCHES_STR="${BATCHES:-1 50}"
 OUT_ROOT="${OUT_ROOT:-experiments}"
